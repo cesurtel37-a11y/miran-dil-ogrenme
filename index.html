@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miran-Lingo Pro</title>
+    <style>
+        /* --- 1-15: TEMEL RENKLER VE DÜZEN (Sarı-Kırmızı) --- */
+        :root {
+            --ana-kirmizi: #d32f2f; /* Galatasaray Kırmızısı */
+            --ana-sari: #fbc02d;   /* Galatasaray Sarısı */
+            --arka-plan: #fffde7;  /* Çok açık sarı */
+            --yazi-renk: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--arka-plan);
+            color: var(--yazi-renk);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- 16-30: ÜST BAR (Can, Puan, Seviye) --- */
+        .header-bar {
+            width: 100%;
+            background-color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            z-index: 100;
+        }
+
+        .stat-box { font-weight: bold; font-size: 1.1em; display: flex; align-items: center; gap: 5px; }
+        .icon-heart { color: var(--ana-kirmizi); font-size: 1.3em; }
+        .icon-star { color: var(--ana-sari); font-size: 1.3em; }
+
+        /* --- 31-50: ANA OYUN ALANI VE KARTLAR --- */
+        .main-container {
+            margin-top: 100px; /* Üst bar için boşluk */
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .question-card {
+            background-color: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 3px solid var(--ana-sari);
+            margin-bottom: 20px;
+        }
+
+        .word-to-translate {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--ana-kirmizi);
+            margin: 10px 0;
+            cursor: pointer; /* İpucu için */
+        }
+
+        .hint-text { color: #888; font-style: italic; font-size: 0.9em; margin-bottom: 15px; }
+
+        /* --- 51-60: CEVAP ALANI VE BUTONLAR --- */
+        .answer-input {
+            width: 90%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        .answer-input:focus { border-color: var(--ana-kirmizi); }
+
+        .check-btn {
+            background-color: var(--ana-kirmizi);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        .check-btn:hover { background-color: #b71c1c; }
+        .check-btn:active { transform: scale(0.98); }
+
+        /* --- 61-70: GERİ BİLDİRİM VE OYUN SONU (Ayrıntılı Rapor) --- */
+        #feedback-area {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+            border-radius: 10px;
+            padding: 15px;
+            display: none; /* Başlangıçta gizli */
+        }
+
+        .correct-feed { background-color: #e8f5e9; color: #2e7d32; border: 2px solid #2e7d32; }
+        .wrong-feed { background-color: #ffebee; color: var(--ana-kirmizi); border: 2px solid var(--ana-kirmizi); }
+
+        #game-over-screen {
+            display: none; /* Başlangıçta gizli */
+            background-color: white;
+            border-radius: 20px;
+            padding: 40px;
+            border: 4px solid var(--ana-kirmizi);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="stat-box">⭐ SEVİYE <span id="level-val">1</span></div>
+        <div class="stat-box"><span class="icon-heart">❤️</span> <span id="heart-val">3</span> CAN</div>
+        <div class="stat-box"><span class="icon-star">✨</span> <span id="xp-val">0</span> XP</div>
+    </div>
+
+    <div class="main-container" id="game-area">
+        <div class="question-card">
+            <p>Bu kelimenin Türkçesi nedir?</p>
+            <div class="word-to-translate" id="word-display" onclick="showHint()">Apple</div>
+            <p class="hint-text" id="hint-display">(İpucu için kelimeye tıkla)</p>
+            
+            <input type="text" class="answer-input" id="answer-input" placeholder="Cevabını buraya yaz...">
+            <button class="check-btn" onclick="checkAnswer()">KONTROL ET</button>
+        </div>
+
+        <div id="feedback-area"></div>
+    </div>
+
+    <div class="main-container" id="game-over-screen">
+        <h1 style="color: var(--ana-kirmizi);">💀 OYUN BİTTİ!</h1>
+        <p>Maalesef canların bitti Miran Başkan.</p>
+        <p>Toplam XP: <strong id="final-xp">0</strong> | Ulaşılan Seviye: <strong id="final-level">1</strong></p>
+        <button class="check-btn" onclick="location.reload()">TEKRAR DENE</button>
+    </div>
+
+    <script>
+        // --- 21-40: KELİME VERİ TABANI VE DEĞİŞKENLER (Ayrıntılı) ---
+        const dictionary = [
+            {eng: "Apple", tr: "Elma", hint: "E harfiyle başlar"},
+            {eng: "Book", tr: "Kitap", hint: "K harfiyle başlar"},
+            {eng: "Home", tr: "Ev", hint: "E harfiyle başlar"},
+            {eng: "School", tr: "Okul", hint: "O harfiyle başlar"},
+            {eng: "Water", tr: "Su", hint: "S harfiyle başlar"}
+        ];
+
+        let currentQuestionIndex = 0;
+        let lives = 3;
+        let xp = 0;
+        let level = 1;
+        let hintUsed = false;
+
+        // Ses Efektleri (Tarayıcı destekli)
+        const sndCorrect = new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3');
+        const sndWrong = new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3');
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= dictionary.length) {
+                // Tüm kelimeler bitti, tebrik ekranı yapılabilir (Şimdilik başa dönüyor)
+                currentQuestionIndex = 0;
+            }
+            hintUsed = false;
+            document.getElementById('word-display').innerText = dictionary[currentQuestionIndex].eng;
+            document.getElementById('hint-display').innerText = "(İpucu için kelimeye tıkla)";
+            document.getElementById('answer-input').value = "";
+            document.getElementById('feedback-area').style.display = "none";
+        }
+
+        // --- 41-55: OYUN MANTIĞI (Puan, Can, Kontrol) ---
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answer-input').value.trim().toLowerCase();
+            const correctAnswer = dictionary[currentQuestionIndex].tr.toLowerCase();
+            const feedback = document.getElementById('feedback-area');
+
+            if (userAnswer === correctAnswer) {
+                // DOĞRU CEVAP
+                sndCorrect.play();
+                feedback.innerText = "✅ HARİKA! Doğru cevap.";
+                feedback.className = "correct-feed";
+                feedback.style.display = "block";
+                
+                let xpGain = hintUsed ? 15 : 25; // İpucu kullandıysa az puan
+                xp += xpGain;
+                document.getElementById('xp-val').innerText = xp;
+
+                // Seviye Atlama (100 XP'de bir)
+                if (xp >= 100) {
+                    level++;
+                    xp = 0;
+                    document.getElementById('level-val').innerText = level;
+                    document.getElementById('xp-val').innerText = xp;
+                    alert("🎉 TEBRİKLER! SEVİYE ATLADIN!");
+                }
+                
+                currentQuestionIndex++;
+                setTimeout(loadQuestion, 1500); // 1.5 saniye sonra sonraki soru
+
+            } else {
+                // YANLIŞ CEVAP
+                sndWrong.play();
+                lives--;
+                document.getElementById('heart-val').innerText = lives;
+                feedback.innerText = `❌ MAALESEF... Doğrusu '${dictionary[currentQuestionIndex].tr}' olmalıydı.`;
+                feedback.className = "wrong-feed";
+                feedback.style.display = "block";
+
+                if (lives <= 0) {
+                    // OYUN BİTTİ
+                    document.getElementById('game-area').style.display = "none";
+                    document.getElementById('game-over-screen').style.display = "block";
+                    document.getElementById('final-xp').innerText = (level - 1) * 100 + xp;
+                    document.getElementById('final-level').innerText = level;
+                } else {
+                    currentQuestionIndex++;
+                    setTimeout(loadQuestion, 2000); // 2 saniye sonra sonraki soru
+                }
+            }
+        }
+
+        // --- 56-70: İPUCU SİSTEMİ ---
+        function showHint() {
+            if (!hintUsed) {
+                document.getElementById('hint-display').innerText = `İpucu: ${dictionary[currentQuestionIndex].hint} (-10 XP)`;
+                hintUsed = true;
+            }
+        }
+
+        // İlk soruyu yükle
+        loadQuestion();
+
+    </script>
+</body>
+</html>
