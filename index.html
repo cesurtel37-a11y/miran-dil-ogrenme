@@ -211,37 +211,4 @@
 
             } else {
                 // YANLIŞ CEVAP
-                sndWrong.play();
-                lives--;
-                document.getElementById('heart-val').innerText = lives;
-                feedback.innerText = `❌ MAALESEF... Doğrusu '${dictionary[currentQuestionIndex].tr}' olmalıydı.`;
-                feedback.className = "wrong-feed";
-                feedback.style.display = "block";
-
-                if (lives <= 0) {
-                    // OYUN BİTTİ
-                    document.getElementById('game-area').style.display = "none";
-                    document.getElementById('game-over-screen').style.display = "block";
-                    document.getElementById('final-xp').innerText = (level - 1) * 100 + xp;
-                    document.getElementById('final-level').innerText = level;
-                } else {
-                    currentQuestionIndex++;
-                    setTimeout(loadQuestion, 2000); // 2 saniye sonra sonraki soru
-                }
-            }
-        }
-
-        // --- 56-70: İPUCU SİSTEMİ ---
-        function showHint() {
-            if (!hintUsed) {
-                document.getElementById('hint-display').innerText = `İpucu: ${dictionary[currentQuestionIndex].hint} (-10 XP)`;
-                hintUsed = true;
-            }
-        }
-
-        // İlk soruyu yükle
-        loadQuestion();
-
-    </script>
-</body/>
-</html>
+                sndWrong.play
